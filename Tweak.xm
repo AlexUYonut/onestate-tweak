@@ -4,11 +4,11 @@
 #import <substrate.h>
 
 // ============================================
-// DEFINIȚII TEHNICE (Nu modifica aici)
+// DEFINIȚII TEHNICE
 // ============================================
 
 typedef struct Vector3 {
-    float x; y; z;
+    float x, y, z; // AM REPARAT AICI: virgule în loc de punct și virgulă
 } Vector3;
 
 typedef struct Il2CppArray {
@@ -59,7 +59,7 @@ static bool InitializeIL2CPP() {
 }
 
 // ============================================
-// UI ESP (DESIGNUL TĂU ORIGINAL)
+// UI ESP
 // ============================================
 
 @interface ESPOverlayView : UIView {
@@ -78,12 +78,13 @@ static bool InitializeIL2CPP() {
         self.userInteractionEnabled = NO;
         self.playersData = [NSMutableArray array];
         
-        // Căutare clasă (folosim Assembly-CSharp pentru OneState)
         void* domain = il2cpp_domain_get();
         size_t size;
         void** assemblies = (void**)il2cpp_domain_get_assemblies(domain, &size);
-        void* image = il2cpp_assembly_get_image(assemblies[0]); 
-        playerClass = il2cpp_class_from_name(image, "", "Player"); // Ajustează numele dacă e nevoie
+        if (assemblies) {
+            void* image = il2cpp_assembly_get_image(assemblies[0]); 
+            playerClass = il2cpp_class_from_name(image, "", "Player");
+        }
 
         updateTimer = [NSTimer scheduledTimerWithTimeInterval:0.1 repeats:YES block:^(NSTimer *timer) {
             [self scanPlayers];
@@ -121,13 +122,14 @@ static bool InitializeIL2CPP() {
     for (NSValue *val in self.playersData) {
         CGPoint pos = [val CGPointValue];
 
-        // Desenare Box (Stilul tău)
         [[UIColor greenColor] setStroke];
         CGContextSetLineWidth(context, 2.0);
+        
+        // Box
         CGRect box = CGRectMake(pos.x - 25, pos.y - 50, 50, 100);
         CGContextStrokeRect(context, box);
 
-        // Desenare Linie (Snapline)
+        // Snapline
         CGContextMoveToPoint(context, rect.size.width/2, rect.size.height);
         CGContextAddLineToPoint(context, pos.x, pos.y);
         CGContextStrokePath(context);
@@ -136,14 +138,12 @@ static bool InitializeIL2CPP() {
 @end
 
 // ============================================
-// CONSTRUCTOR REPARAT (FĂRĂ ERORI)
+// CONSTRUCTOR
 // ============================================
 
 __attribute__((constructor))
 static void InitializeUnityESP() {
-    // Așteptăm 15 secunde să se încarce framework-ul jocului
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(15 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        
         if (!InitializeIL2CPP()) return;
 
         UIWindow *window = nil;
@@ -162,18 +162,6 @@ static void InitializeUnityESP() {
             ESPOverlayView *overlay = [[ESPOverlayView alloc] initWithFrame:window.bounds];
             [window addSubview:overlay];
             [window bringSubviewToFront:overlay];
-            
-            // Notificare de activare
-            UILabel *notif = [[UILabel alloc] initWithFrame:CGRectMake(0, 50, window.bounds.size.width, 40)];
-            notif.text = @"ONESTATE ESP LOADED";
-            notif.textColor = [UIColor greenColor];
-            notif.textAlignment = NSTextAlignmentCenter;
-            notif.font = [UIFont boldSystemFontOfSize:18];
-            [window addSubview:notif];
-            
-            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-                [notif removeFromSuperview];
-            });
         }
     });
 }
