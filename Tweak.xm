@@ -12,26 +12,21 @@ void patch_offset(uintptr_t offset, uint32_t data) {
 %hook UIApplication
 - (void)finishedTest:(id)arg1 extraResults:(id)arg2 {
     %orig;
-    
-    // FIXUL pentru eroarea din Imaginea 11:
-    int len = 1024;
-    unsigned char *data = (unsigned char *)malloc(len); 
-    if (data) {
-        memset(data, 0, len);
-        free(data);
-    }
 
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(3 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        // OFFSETURILE TALE
-        patch_offset(0x1234567, 0xD2800020); // Aimbot
-        patch_offset(0x7654321, 0xD2800020); // ESP
+    // Am setat 60 de secunde pentru a permite spawn-ul pe server
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(60 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        
+        // --- AIMBOT (4719957 -> 0x480555) ---
+        patch_offset(0x480555, 0xD65F03C0); 
+
+        // --- ESP (4719eee -> 0x4804EE) ---
+        patch_offset(0x4804EE, 0xD2800020); 
 
         UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"OneState Ultra" 
-            message:@"Hacks Activated!" 
+            message:@"Hacks Activated after 1 minute delay!" 
             preferredStyle:UIAlertControllerStyleAlert];
         [alert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil]];
         
-        // Rezolvă eroarea din Imaginea 10 (keyWindow)
         UIWindow *window = [UIApplication sharedApplication].windows.firstObject;
         [window.rootViewController presentViewController:alert animated:YES completion:nil];
     });
