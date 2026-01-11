@@ -10,9 +10,7 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          # Instalăm ldid pentru a putea semna binarul final
           brew install ldid
-          # Clonăm Theos
           git clone --recursive https://github.com/theos/theos.git ~/theos
           echo "THEOS=$HOME/theos" >> $GITHUB_ENV
           echo "$HOME/theos/bin" >> $GITHUB_PATH
@@ -21,21 +19,16 @@ jobs:
         run: |
           mkdir -p ~/theos/sdks
           cd ~/theos/sdks
-          # Folosim git clone pentru SDK pentru a evita erorile de arhivă dezarhivată prost
           git clone --depth 1 https://github.com/theos/sdks.git temp_repo
           mv temp_repo/iPhoneOS14.5.sdk ./
           rm -rf temp_repo
 
       - name: Build Tweak
         run: |
-          # Compilăm tweak-ul
-          make
+          make package # Această comandă creează fișierul .deb final
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: OneState-Final-Build
-          path: |
-            ./packages/*.deb
-            ./.theos/obj/*.dylib
-            ./*.dylib
+          name: OneState-Install-Package
+          path: packages/*.deb # Caută pachetul instalabil în folderul corect
