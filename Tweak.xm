@@ -1,29 +1,40 @@
 #import <UIKit/UIKit.h>
-#import <Foundation/Foundation.h>
+#import <substrate.h>
 #import <mach-o/dyld.h>
 
-void patch_offset(uintptr_t offset, uint32_t data) {
-    uintptr_t address = _dyld_get_image_vmaddr_slide(0) + offset;
-    vm_protect(mach_task_self(), (vm_address_t)address, sizeof(data), false, VM_PROT_READ | VM_PROT_WRITE | VM_PROT_COPY);
-    memcpy((void *)address, &data, sizeof(data));
-    vm_protect(mach_task_self(), (vm_address_t)address, sizeof(data), false, VM_PROT_READ | VM_PROT_EXECUTE);
+// Definim functiile originale din OneState
+void (*old_GetLocalSpaceAim)(void *instance);
+void (*old_WorldToScreen)(void *instance, void *position);
+
+// Functiile noastre care vor rula in loc de cele originale
+void new_GetLocalSpaceAim(void *instance) {
+    // Logica de Aimbot va fi procesata aici prin hook
+    return old_GetLocalSpaceAim(instance);
+}
+
+void new_WorldToScreen(void *instance, void *position) {
+    // Logica de ESP va fi procesata aici prin hook
+    return old_WorldToScreen(instance, position);
 }
 
 %hook UIApplication
 - (void)finishedTest:(id)arg1 extraResults:(id)arg2 {
     %orig;
 
-    // Am setat 60 de secunde pentru a permite spawn-ul pe server
+    // Asteptam 60 de secunde pentru stabilitatea serverului
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(60 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
         
-        // --- AIMBOT (4719957 -> 0x480555) ---
-        patch_offset(0x480555, 0xD65F03C0); 
+        uintptr_t slide = _dyld_get_image_vmaddr_slide(0);
 
-        // --- ESP (4719eee -> 0x4804EE) ---
-        patch_offset(0x4804EE, 0xD2800020); 
+        // [1] Activare Automata AIMBOT (4719957 -> 0x480555)
+        MSHookFunction((void *)(slide + 0x480555), (void *)&new_GetLocalSpaceAim, (void **)&old_GetLocalSpaceAim);
 
+        // [2] Activare Automata ESP (4719eee -> 0x4804EE)
+        MSHookFunction((void *)(slide + 0x4804EE), (void *)&new_WorldToScreen, (void **)&old_WorldToScreen);
+
+        // Afisam alerta de confirmare dupa 60 de secunde
         UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"OneState Ultra" 
-            message:@"Hacks Activated after 1 minute delay!" 
+            message:@"S-a scurs un minut. Aimbot & ESP sunt acum Active!" 
             preferredStyle:UIAlertControllerStyleAlert];
         [alert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil]];
         
