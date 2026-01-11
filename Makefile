@@ -8,10 +8,8 @@ ARCHS = arm64
 include $(THEOS)/makefiles/common.mk
 
 TWEAK_NAME = OneStateUltra
-# Am schimbat extensia aici
 OneStateUltra_FILES = Tweak.xm
 OneStateUltra_FRAMEWORKS = UIKit Foundation
 OneStateUltra_CFLAGS = -fobjc-arc -Wno-deprecated-declarations -Wno-error
-OneStateUltra_INSTALL_PATH = /Library/MobileSubstrate/DynamicLibraries/
 
 include $(THEOS_MAKE_PATH)/tweak.mk
