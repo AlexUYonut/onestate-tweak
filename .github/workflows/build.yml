@@ -18,7 +18,7 @@ jobs:
           sudo xcode-select -s /Applications/Xcode.app
           export THEOS=/opt/theos
           sudo git clone --recursive https://github.com/theos/theos.git $THEOS
-          # Folosim metoda de download directa
+          # Folosim link-ul direct care a functionat anterior
           sudo curl -L https://github.com/theos/sdks/raw/master/iPhoneOS14.5.sdk.tar.xz -o $THEOS/sdks/iPhoneOS14.5.sdk.tar.xz
           sudo tar -xf $THEOS/sdks/iPhoneOS14.5.sdk.tar.xz -C $THEOS/sdks/
           
