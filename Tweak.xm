@@ -1,17 +1,21 @@
 #import <UIKit/UIKit.h>
 #import <mach-o/dyld.h>
-#import <dlfcn.h>
+#import <mach/mach.h>
 
-// Functie universala de patch pentru simboluri
-void patch_symbol(const char *symbolName) {
-    void *symbol = dlsym(RTLD_DEFAULT, symbolName);
-    if (symbol) {
-        uint32_t patch = 0xD65F03C0; // Instructiunea de activare
-        vm_protect(mach_task_self(), (vm_address_t)symbol, sizeof(patch), false, VM_PROT_READ | VM_PROT_WRITE | VM_PROT_COPY);
-        memcpy(symbol, &patch, sizeof(patch));
-        vm_protect(mach_task_self(), (vm_address_t)symbol, sizeof(patch), false, VM_PROT_READ | VM_PROT_EXECUTE);
-        NSLog(@"[OneState] %s a fost activat!", symbolName);
-    }
+void flash_patch(uintptr_t offset, uint32_t patch_data, uint32_t original_data) {
+    uintptr_t address = _dyld_get_image_vmaddr_slide(0) + offset;
+    
+    // Pas 1: Aplicam Hack-ul
+    vm_protect(mach_task_self(), (vm_address_t)address, 4, false, VM_PROT_READ | VM_PROT_WRITE | VM_PROT_COPY);
+    *(uint32_t *)address = patch_data;
+    vm_protect(mach_task_self(), (vm_address_t)address, 4, false, VM_PROT_READ | VM_PROT_EXECUTE);
+
+    // Pas 2: Dupa 0.5 secunde punem codul original inapoi
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        vm_protect(mach_task_self(), (vm_address_t)address, 4, false, VM_PROT_READ | VM_PROT_WRITE | VM_PROT_COPY);
+        *(uint32_t *)address = original_data;
+        vm_protect(mach_task_self(), (vm_address_t)address, 4, false, VM_PROT_READ | VM_PROT_EXECUTE);
+    });
 }
 
 %hook UIApplication
@@ -20,14 +24,14 @@ void patch_symbol(const char *symbolName) {
 
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(60 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
         
-        // 1. Activam AIMBOT dupa numele functiei
-        patch_symbol("GetLocalSpaceAim");
+        // Aplicam flash pe ambele adrese din pozele tale
+        // 0xD65F03C0 este Patch-ul, restul sunt datele originale extrase din motorul Unity
         
-        // 2. Activam ESP dupa numele functiei
-        patch_symbol("WorldToScreen"); 
+        flash_patch(0x480555, 0xD65F03C0, 0xA9BE4FF4); // Aimbot
+        flash_patch(0x4804EE, 0xD65F03C0, 0xD10103FF); // ESP
 
-        UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"OneState Ultra" 
-            message:@"Ambele functii (Aim & ESP) au fost procesate prin nume." 
+        UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"OneState Flash" 
+            message:@"Hack activat si mascat cu succes!" 
             preferredStyle:UIAlertControllerStyleAlert];
         [alert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil]];
         
