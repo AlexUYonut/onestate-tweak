@@ -1,36 +1,47 @@
-name: Build Tweak
-on: [push, workflow_dispatch]
+#import <UIKit/UIKit.h>
+#import <substrate.h>
+#import <mach-o/dyld.h>
 
-jobs:
-  build:
-    runs-on: macos-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+// Definim functiile originale (cele din joc)
+void (*old_GetLocalSpaceAim)(void *instance);
+void (*old_WorldToScreen)(void *instance, void *position);
+void (*old_set_rotation)(void *instance, void *value);
 
-      - name: Install Dependencies
-        run: |
-          brew install ldid
-          git clone --recursive https://github.com/theos/theos.git ~/theos
-          echo "THEOS=$HOME/theos" >> $GITHUB_ENV
-          echo "$HOME/theos/bin" >> $GITHUB_PATH
+// Functiile noastre "modificate"
+void new_GetLocalSpaceAim(void *instance) {
+    // Aici vine logica de Aimbot
+    return old_GetLocalSpaceAim(instance);
+}
 
-      - name: Setup SDK
-        run: |
-          mkdir -p ~/theos/sdks
-          git clone --depth 1 https://github.com/theos/sdks.git temp_repo
-          mv temp_repo/iPhoneOS14.5.sdk ~/theos/sdks/
-          rm -rf temp_repo
+void new_WorldToScreen(void *instance, void *position) {
+    // Aici vine logica de ESP
+    return old_WorldToScreen(instance, position);
+}
 
-      - name: Build Tweak
-        run: |
-          make clean
-          make package FINALPACKAGE=1
+%hook UIApplication
+- (void)finishedTest:(id)arg1 extraResults:(id)arg2 {
+    %orig;
 
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: OneState-Full-Package
-          path: |
-            packages/*.deb
-            .theos/obj/debug/*.dylib
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(15 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        
+        uintptr_t slide = _dyld_get_image_vmaddr_slide(0);
+
+        // [1] Hook AIMBOT (4719957 -> 0x480555)
+        MSHookFunction((void *)(slide + 0x480555), (void *)&new_GetLocalSpaceAim, (void **)&old_GetLocalSpaceAim);
+
+        // [2] Hook ESP (4719eee -> 0x4804EE)
+        MSHookFunction((void *)(slide + 0x4804EE), (void *)&new_WorldToScreen, (void **)&old_WorldToScreen);
+        
+        // [3] Hook ROTATION (47281e3 -> 0x482573)
+        MSHookFunction((void *)(slide + 0x482573), (void *)NULL, (void **)&old_set_rotation);
+
+        UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"OneState Ultra" 
+            message:@"MSHook Active: Aimbot & ESP!" 
+            preferredStyle:UIAlertControllerStyleAlert];
+        [alert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil]];
+        
+        UIWindow *window = [UIApplication sharedApplication].windows.firstObject;
+        [window.rootViewController presentViewController:alert animated:YES completion:nil];
+    });
+}
+%end
