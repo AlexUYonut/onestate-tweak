@@ -18,9 +18,8 @@ jobs:
       - name: Setup SDK
         run: |
           mkdir -p ~/theos/sdks
-          cd ~/theos/sdks
           git clone --depth 1 https://github.com/theos/sdks.git temp_repo
-          mv temp_repo/iPhoneOS14.5.sdk ./
+          mv temp_repo/iPhoneOS14.5.sdk ~/theos/sdks/
           rm -rf temp_repo
 
       - name: Build Tweak
