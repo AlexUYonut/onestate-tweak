@@ -15,7 +15,8 @@ void patch_offset(uintptr_t offset, uint32_t data) {
     
     // FIX pentru eroarea de 4KB (Imaginea 11)
     int len = 1024;
-    unsigned char *data = (unsigned char *)malloc(len); 
+    unsigned char *data = (unsigned char *)malloc(len);
+
     if (data) {
         memset(data, 0, len);
         free(data);
@@ -37,3 +38,4 @@ void patch_offset(uintptr_t offset, uint32_t data) {
     });
 }
 %end
+
