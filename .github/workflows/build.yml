@@ -1,35 +1,36 @@
-name: Build OneState Ultra Hack
-
-on:
-  push:
-    branches: [ main ]
-  workflow_dispatch:
+name: Build Tweak
+on: [push, workflow_dispatch]
 
 jobs:
   build:
     runs-on: macos-latest
-
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Theos
+      - name: Install Dependencies
         run: |
-          sudo xcode-select -s /Applications/Xcode.app
-          export THEOS=/opt/theos
-          sudo git clone --recursive https://github.com/theos/theos.git $THEOS
-          # Folosim link-ul direct care a functionat anterior
-          sudo curl -L https://github.com/theos/sdks/raw/master/iPhoneOS14.5.sdk.tar.xz -o $THEOS/sdks/iPhoneOS14.5.sdk.tar.xz
-          sudo tar -xf $THEOS/sdks/iPhoneOS14.5.sdk.tar.xz -C $THEOS/sdks/
-          
+          brew install ldid
+          git clone --recursive https://github.com/theos/theos.git ~/theos
+          echo "THEOS=$HOME/theos" >> $GITHUB_ENV
+          echo "$HOME/theos/bin" >> $GITHUB_PATH
+
+      - name: Setup SDK
+        run: |
+          mkdir -p ~/theos/sdks
+          git clone --depth 1 https://github.com/theos/sdks.git temp_repo
+          mv temp_repo/iPhoneOS14.5.sdk ~/theos/sdks/
+          rm -rf temp_repo
+
       - name: Build Tweak
         run: |
-          export THEOS=/opt/theos
           make clean
           make package FINALPACKAGE=1
-          
+
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: OneStateUltra-Build
-          path: packages/*.deb
+          name: OneState-Full-Package
+          path: |
+            packages/*.deb
+            .theos/obj/debug/*.dylib
