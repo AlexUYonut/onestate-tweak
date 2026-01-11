@@ -5,7 +5,7 @@
 // Funcție pentru a scrie octeți (bytes) direct în memorie
 void patch_memory(uintptr_t address, const char *hex) {
     size_t len = strlen(hex) / 2;
-    unsigned char *data = malloc(len);
+    unsigned char *data = (unsigned char *)malloc(len);
     for (size_t i = 0; i < len; i++) {
         sscanf(hex + i * 2, "%02hhx", &data[i]);
     }
@@ -65,4 +65,5 @@ void apply_cheats() {
     });
 }
 %end
+
 
