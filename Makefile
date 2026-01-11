@@ -1,3 +1,4 @@
+# Forțează producerea binarului chiar dacă sunt avertismente
 FINALPACKAGE = 1
 DEBUG = 0
 STRICT = 0
@@ -10,6 +11,6 @@ include $(THEOS)/makefiles/common.mk
 TWEAK_NAME = OneStateUltra
 OneStateUltra_FILES = Tweak.xm
 OneStateUltra_FRAMEWORKS = UIKit Foundation
-OneStateUltra_CFLAGS = -fobjc-arc -Wno-deprecated-declarations -Wno-error
+OneStateUltra_CFLAGS = -fobjc-arc -Wno-deprecated-declarations -Wno-error -Wno-implicit-function-declaration
 
 include $(THEOS_MAKE_PATH)/tweak.mk
