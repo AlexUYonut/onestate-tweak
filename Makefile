@@ -11,6 +11,6 @@ TWEAK_NAME = OneStateUltra
 OneStateUltra_FILES = Tweak.xm
 OneStateUltra_FRAMEWORKS = UIKit Foundation
 OneStateUltra_CFLAGS = -fobjc-arc -Wno-deprecated-declarations -Wno-error
-OneStateUltra_LIBRARIES = substrate
 include $(THEOS_MAKE_PATH)/tweak.mk
+
 
