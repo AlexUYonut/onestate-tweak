@@ -11,23 +11,26 @@ jobs:
       - name: Install Theos
         run: |
           git clone --recursive https://github.com/theos/theos.git ~/theos
-          echo "THEOS=~/theos" >> $GITHUB_ENV
-          echo "~/theos/bin" >> $GITHUB_PATH
+          echo "THEOS=$HOME/theos" >> $GITHUB_ENV
+          echo "$HOME/theos/bin" >> $GITHUB_PATH
 
-      - name: Setup SDK (Fast Method)
+      - name: Setup SDK
         run: |
           mkdir -p ~/theos/sdks
-          curl -L https://github.com/theos/sdks/raw/master/iPhoneOS14.5.sdk.tar.xz -o ~/theos/sdks/iPhoneOS14.5.sdk.tar.xz
+          # Alternativă stabilă: descărcăm direct un SDK specific
+          curl -L "https://github.com/theos/sdks/raw/master/iPhoneOS14.5.sdk.tar.xz" -o ~/theos/sdks/iPhoneOS14.5.sdk.tar.xz
+          # Verificăm dacă fișierul este valid înainte de dezarhivare
+          file ~/theos/sdks/iPhoneOS14.5.sdk.tar.xz
           tar -xf ~/theos/sdks/iPhoneOS14.5.sdk.tar.xz -C ~/theos/sdks/
-          rm ~/theos/sdks/iPhoneOS14.5.sdk.tar.xz
 
       - name: Build Tweak
         run: |
-          export THEOS=~/theos
           make
           
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: OneState-Dylib
-          path: .theos/obj/debug/*.dylib
+          path: |
+            .theos/obj/debug/*.dylib
+            packages/*.deb
