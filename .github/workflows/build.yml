@@ -25,18 +25,11 @@ jobs:
 
       - name: Build Tweak
         run: |
-          # Curățăm build-urile vechi de 4KB
           make clean
-          # Forțăm crearea pachetului final
           make package FINALPACKAGE=1
-          # Listăm fișierele pentru a vedea dacă binarul există
-          ls -R .theos/obj/
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: OneState-Final-Package
-          # Căutăm orice .deb sau .dylib generat
-          path: |
-            packages/*.deb
-            **/*.dylib
+          name: OneState-Final-Build
+          path: packages/*.deb
