@@ -3,8 +3,7 @@ Name: OneStateUltra
 Depends: mobilesubstrate
 Version: 0.0.1
 Architecture: iphoneos-arm
-Description: OneState Tweak
+Description: Tweak for OneState
 Maintainer: Alex
 Author: Alex
 Section: Tweaks
-
