@@ -1,47 +1,34 @@
-#import <UIKit/UIKit.h>
-#import <substrate.h>
-#import <mach-o/dyld.h>
+name: Build OneState Ultra Hack
 
-// Definim functiile originale (cele din joc)
-void (*old_GetLocalSpaceAim)(void *instance);
-void (*old_WorldToScreen)(void *instance, void *position);
-void (*old_set_rotation)(void *instance, void *value);
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
 
-// Functiile noastre "modificate"
-void new_GetLocalSpaceAim(void *instance) {
-    // Aici vine logica de Aimbot
-    return old_GetLocalSpaceAim(instance);
-}
+jobs:
+  build:
+    runs-on: macos-latest
 
-void new_WorldToScreen(void *instance, void *position) {
-    // Aici vine logica de ESP
-    return old_WorldToScreen(instance, position);
-}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-%hook UIApplication
-- (void)finishedTest:(id)arg1 extraResults:(id)arg2 {
-    %orig;
-
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(15 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        
-        uintptr_t slide = _dyld_get_image_vmaddr_slide(0);
-
-        // [1] Hook AIMBOT (4719957 -> 0x480555)
-        MSHookFunction((void *)(slide + 0x480555), (void *)&new_GetLocalSpaceAim, (void **)&old_GetLocalSpaceAim);
-
-        // [2] Hook ESP (4719eee -> 0x4804EE)
-        MSHookFunction((void *)(slide + 0x4804EE), (void *)&new_WorldToScreen, (void **)&old_WorldToScreen);
-        
-        // [3] Hook ROTATION (47281e3 -> 0x482573)
-        MSHookFunction((void *)(slide + 0x482573), (void *)NULL, (void **)&old_set_rotation);
-
-        UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"OneState Ultra" 
-            message:@"MSHook Active: Aimbot & ESP!" 
-            preferredStyle:UIAlertControllerStyleAlert];
-        [alert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil]];
-        
-        UIWindow *window = [UIApplication sharedApplication].windows.firstObject;
-        [window.rootViewController presentViewController:alert animated:YES completion:nil];
-    });
-}
-%end
+      - name: Setup Theos
+        run: |
+          sudo xcode-select -s /Applications/Xcode.app
+          export THEOS=/opt/theos
+          sudo git clone --recursive https://github.com/theos/theos.git $THEOS
+          sudo curl -L https://github.com/theos/sdks/raw/master/iPhoneOS14.5.sdk.tar.xz -o $THEOS/sdks/iPhoneOS14.5.sdk.tar.xz
+          sudo tar -xf $THEOS/sdks/iPhoneOS14.5.sdk.tar.xz -C $THEOS/sdks/
+          
+      - name: Build Tweak
+        run: |
+          export THEOS=/opt/theos
+          make clean
+          make package FINALPACKAGE=1
+          
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: OneStateUltra-Build
+          path: packages/*.deb
