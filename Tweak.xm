@@ -1,174 +1,61 @@
 #import <UIKit/UIKit.h>
-#import <dlfcn.h>
 #import <mach-o/dyld.h>
-#import <substrate.h>
+#import <mach/mach.h>
+#import <dlfcn.h>
 
-// ============================================
-// DEFINIȚII TEHNICE
-// ============================================
+// ================= CONFIGURATION =================
+// Set to 3.0f as requested (3x normal speed)
+float movementSpeed = 3.0f; 
 
-typedef struct Vector3 {
-    float x, y, z; 
-} Vector3;
+// The offset found in your scanner for UnityEngine.Animator::get_speed
+#define SPEED_OFFSET 0x4732ff8 
+#define TARGET_FRAMEWORK "UnityFramework"
+// =================================================
 
-typedef struct Il2CppArray {
-    void* klass;
-    void* monitor;
-    void* bounds;
-    uintptr_t max_length;
-    void* vector[0]; 
-} Il2CppArray;
+void patch_memory(uintptr_t address, float value) {
+    mach_port_t task = mach_task_self();
+    
+    if (address < 0x100000000) return;
 
-// Function pointers
-void* (*il2cpp_domain_get_assemblies)(void* domain, size_t* size);
-void* (*il2cpp_assembly_get_image)(void* assembly);
-void* (*il2cpp_class_from_name)(void* image, const char* namespaze, const char* name);
-void* (*il2cpp_domain_get)();
-void* (*il2cpp_resolve_icall)(const char* name);
-void* (*il2cpp_class_get_type)(void* klass);
+    vm_address_t page_start = trunc_page(address);
+    vm_size_t page_size = PAGE_SIZE;
 
-Vector3 (*Transform_get_position)(void* transform);
-void* (*Component_get_transform)(void* component);
-void* (*Camera_get_main)();
-Vector3 (*Camera_WorldToScreenPoint)(void* camera, Vector3 worldPos);
-void* (*Object_FindObjectsOfType)(void* type);
-
-// ============================================
-// INIȚIALIZARE IL2CPP
-// ============================================
-
-static bool InitializeIL2CPP() {
-    void* handle = dlopen("UnityFramework", RTLD_LAZY);
-    if (!handle) handle = dlopen(NULL, RTLD_LAZY);
-    if (!handle) return false;
-
-    il2cpp_domain_get = (void* (*)())dlsym(handle, "il2cpp_domain_get");
-    il2cpp_domain_get_assemblies = (void* (*)(void*, size_t*))dlsym(handle, "il2cpp_domain_get_assemblies");
-    il2cpp_assembly_get_image = (void* (*)(void*))dlsym(handle, "il2cpp_assembly_get_image");
-    il2cpp_class_from_name = (void* (*)(void*, const char*, const char*))dlsym(handle, "il2cpp_class_from_name");
-    il2cpp_resolve_icall = (void* (*)(const char*))dlsym(handle, "il2cpp_resolve_icall");
-    il2cpp_class_get_type = (void* (*)(void*))dlsym(handle, "il2cpp_class_get_type");
-
-    Camera_get_main = (void* (*)())il2cpp_resolve_icall("UnityEngine.Camera::get_main");
-    Camera_WorldToScreenPoint = (Vector3 (*)(void*, Vector3))il2cpp_resolve_icall("UnityEngine.Camera::WorldToScreenPoint_Injected");
-    Component_get_transform = (void* (*)(void*))il2cpp_resolve_icall("UnityEngine.Component::get_transform");
-    Transform_get_position = (Vector3 (*)(void*))il2cpp_resolve_icall("UnityEngine.Transform::get_position_Injected");
-    Object_FindObjectsOfType = (void* (*)(void*))il2cpp_resolve_icall("UnityEngine.Object::FindObjectsOfType");
-
-    return (il2cpp_domain_get != NULL);
-}
-
-// ============================================
-// ESP OVERLAY VIEW (DESIGN ORIGINAL)
-// ============================================
-
-@interface ESPOverlayView : UIView {
-    NSTimer *updateTimer;
-    void* playerClass;
-}
-@property (nonatomic, strong) NSMutableArray *playersData;
-@end
-
-@implementation ESPOverlayView
-
-- (instancetype)initWithFrame:(CGRect)frame {
-    self = [super initWithFrame:frame];
-    if (self) {
-        self.backgroundColor = [UIColor clearColor];
-        self.userInteractionEnabled = NO;
-        self.playersData = [NSMutableArray array];
+    // Change memory protection to allow writing
+    kern_return_t kr = vm_protect(task, page_start, page_size, FALSE, VM_PROT_READ | VM_PROT_WRITE | VM_PROT_COPY);
+    
+    if (kr == KERN_SUCCESS) {
+        // Overwrite the float value at the specific memory address
+        *(float*)address = value; 
         
-        void* domain = il2cpp_domain_get();
-        size_t size;
-        void** assemblies = (void**)il2cpp_domain_get_assemblies(domain, &size);
-        if (assemblies) {
-            void* image = il2cpp_assembly_get_image(assemblies[0]); 
-            playerClass = il2cpp_class_from_name(image, "", "Player");
-        }
-
-        updateTimer = [NSTimer scheduledTimerWithTimeInterval:0.1 repeats:YES block:^(NSTimer *timer) {
-            [self scanPlayers];
-        }];
-    }
-    return self;
-}
-
-- (void)scanPlayers {
-    [self.playersData removeAllObjects];
-    void* camera = Camera_get_main ? Camera_get_main() : NULL;
-    if (!camera || !playerClass) return;
-
-    Il2CppArray* objects = (Il2CppArray*)Object_FindObjectsOfType(il2cpp_class_get_type(playerClass));
-    if (!objects) return;
-
-    for (uintptr_t i = 0; i < objects->max_length; i++) {
-        void* player = objects->vector[i];
-        if (!player) continue;
-        
-        Vector3 worldPos = Transform_get_position(Component_get_transform(player));
-        Vector3 sPos = Camera_WorldToScreenPoint(camera, worldPos);
-
-        if (sPos.z > 0) {
-            [self.playersData addObject:[NSValue valueWithCGPoint:CGPointMake(sPos.x, self.bounds.size.height - sPos.y)]];
-        }
-    }
-    [self setNeedsDisplay];
-}
-
-- (void)drawRect:(CGRect)rect {
-    CGContextRef context = UIGraphicsGetCurrentContext();
-    if (!context) return;
-
-    for (NSValue *val in self.playersData) {
-        CGPoint pos = [val CGPointValue];
-
-        [[UIColor greenColor] setStroke];
-        CGContextSetLineWidth(context, 2.0);
-        
-        // Desenare Box
-        CGRect box = CGRectMake(pos.x - 25, pos.y - 50, 50, 100);
-        CGContextStrokeRect(context, box);
-
-        // Desenare Snapline (de la mijloc-jos la jucător)
-        CGContextMoveToPoint(context, rect.size.width/2, rect.size.height);
-        CGContextAddLineToPoint(context, pos.x, pos.y);
-        CGContextStrokePath(context);
+        // Restore memory protection to Read + Execute
+        vm_protect(task, page_start, page_size, FALSE, VM_PROT_READ | VM_PROT_EXECUTE);
     }
 }
-@end
-
-// ============================================
-// CONSTRUCTOR CU DELAY DE 60 SECUNDE
-// ============================================
 
 __attribute__((constructor))
-static void InitializeUnityESP() {
+static void StartUltraHack() {
+    // 60 seconds delay to ensure Unity is fully loaded
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(60 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
         
-        if (!InitializeIL2CPP()) {
-            return;
-        }
-
-        UIWindow *window = nil;
-        if (@available(iOS 13.0, *)) {
-            for (UIWindowScene* scene in [UIApplication sharedApplication].connectedScenes) {
-                if (scene.activationState == UISceneActivationStateForegroundActive) {
-                    window = scene.windows.firstObject;
-                    break;
-                }
+        uintptr_t baseAddress = 0;
+        
+        // Locate UnityFramework in memory
+        for (uint32_t i = 0; i < _dyld_image_count(); i++) {
+            const char *name = _dyld_get_image_name(i);
+            if (strstr(name, TARGET_FRAMEWORK)) {
+                baseAddress = (uintptr_t)_dyld_get_image_header(i);
+                break;
             }
-        } else {
-            window = [UIApplication sharedApplication].keyWindow;
         }
 
-        if (window) {
-            ESPOverlayView *overlay = [[ESPOverlayView alloc] initWithFrame:window.bounds];
-            [window addSubview:overlay];
-            [window bringSubviewToFront:overlay];
-            
-            // Confirmare vizuală în consolă (sau log) că a pornit după cele 60s
-            NSLog(@"[ESP] Overlay injectat cu succes după 60 de secunde.");
+        // Fallback to main bundle if framework not found
+        if (baseAddress == 0) {
+            baseAddress = (uintptr_t)_dyld_get_image_header(0);
+        }
+
+        if (baseAddress > 0) {
+            uintptr_t finalAddr = baseAddress + SPEED_OFFSET;
+            patch_memory(finalAddr, movementSpeed);
         }
     });
 }
-
