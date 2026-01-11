@@ -6,8 +6,8 @@ include $(THEOS)/makefiles/common.mk
 TWEAK_NAME = OneStateUltra
 
 OneStateUltra_FILES = Tweak.xm
-OneStateUltra_CFLAGS = -fobjc-arc -Wno-error -Wno-unused-variable
+OneStateUltra_CFLAGS = -fobjc-arc -Wno-error -Wno-unused-variable -Wno-deprecated-declarations
 OneStateUltra_FRAMEWORKS = UIKit Foundation QuartzCore CoreGraphics
-OneStateUltra_LIBRARIES = substrate
+OneStateUltra_LDFLAGS = -Wl,-segalign,4000
 
 include $(THEOS_MAKE_PATH)/tweak.mk
