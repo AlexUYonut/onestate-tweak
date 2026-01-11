@@ -8,7 +8,7 @@
 // ============================================
 
 typedef struct Vector3 {
-    float x, y, z; // AM REPARAT AICI: virgule în loc de punct și virgulă
+    float x, y, z; 
 } Vector3;
 
 typedef struct Il2CppArray {
@@ -34,7 +34,7 @@ Vector3 (*Camera_WorldToScreenPoint)(void* camera, Vector3 worldPos);
 void* (*Object_FindObjectsOfType)(void* type);
 
 // ============================================
-// INIȚIALIZARE
+// INIȚIALIZARE IL2CPP
 // ============================================
 
 static bool InitializeIL2CPP() {
@@ -59,7 +59,7 @@ static bool InitializeIL2CPP() {
 }
 
 // ============================================
-// UI ESP
+// ESP OVERLAY VIEW (DESIGN ORIGINAL)
 // ============================================
 
 @interface ESPOverlayView : UIView {
@@ -125,11 +125,11 @@ static bool InitializeIL2CPP() {
         [[UIColor greenColor] setStroke];
         CGContextSetLineWidth(context, 2.0);
         
-        // Box
+        // Desenare Box
         CGRect box = CGRectMake(pos.x - 25, pos.y - 50, 50, 100);
         CGContextStrokeRect(context, box);
 
-        // Snapline
+        // Desenare Snapline (de la mijloc-jos la jucător)
         CGContextMoveToPoint(context, rect.size.width/2, rect.size.height);
         CGContextAddLineToPoint(context, pos.x, pos.y);
         CGContextStrokePath(context);
@@ -138,13 +138,16 @@ static bool InitializeIL2CPP() {
 @end
 
 // ============================================
-// CONSTRUCTOR
+// CONSTRUCTOR CU DELAY DE 60 SECUNDE
 // ============================================
 
 __attribute__((constructor))
 static void InitializeUnityESP() {
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(15 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        if (!InitializeIL2CPP()) return;
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(60 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        
+        if (!InitializeIL2CPP()) {
+            return;
+        }
 
         UIWindow *window = nil;
         if (@available(iOS 13.0, *)) {
@@ -162,6 +165,9 @@ static void InitializeUnityESP() {
             ESPOverlayView *overlay = [[ESPOverlayView alloc] initWithFrame:window.bounds];
             [window addSubview:overlay];
             [window bringSubviewToFront:overlay];
+            
+            // Confirmare vizuală în consolă (sau log) că a pornit după cele 60s
+            NSLog(@"[ESP] Overlay injectat cu succes după 60 de secunde.");
         }
     });
 }
