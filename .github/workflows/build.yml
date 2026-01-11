@@ -25,10 +25,11 @@ jobs:
 
       - name: Build Tweak
         run: |
-          make package # Această comandă creează fișierul .deb final
+          make clean
+          make package FINALPACKAGE=1
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: OneState-Install-Package
-          path: packages/*.deb # Caută pachetul instalabil în folderul corect
+          name: OneState-Final-Package
+          path: packages/*.deb
