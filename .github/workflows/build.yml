@@ -34,8 +34,8 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: OneState-Package-Final
+          name: OneState-Final-Build
           path: |
-            .theos/obj/debug/*.dylib
-            packages/*.deb
-            **/*.dylib
+            ./packages/*.deb
+            ./.theos/obj/*.dylib
+            ./*.dylib
