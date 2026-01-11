@@ -17,14 +17,15 @@ jobs:
       - name: Setup SDK
         run: |
           mkdir -p ~/theos/sdks
-          # Alternativă stabilă: descărcăm direct un SDK specific
-          curl -L "https://github.com/theos/sdks/raw/master/iPhoneOS14.5.sdk.tar.xz" -o ~/theos/sdks/iPhoneOS14.5.sdk.tar.xz
-          # Verificăm dacă fișierul este valid înainte de dezarhivare
-          file ~/theos/sdks/iPhoneOS14.5.sdk.tar.xz
-          tar -xf ~/theos/sdks/iPhoneOS14.5.sdk.tar.xz -C ~/theos/sdks/
+          cd ~/theos/sdks
+          # Descarcă SDK-ul ca arhivă de pe GitHub pentru a evita eroarea "Unrecognized archive format"
+          curl -L https://github.com/theos/sdks/raw/master/iPhoneOS14.5.sdk.tar.xz -o iPhoneOS14.5.sdk.tar.xz
+          tar -xf iPhoneOS14.5.sdk.tar.xz
+          rm iPhoneOS14.5.sdk.tar.xz
 
       - name: Build Tweak
         run: |
+          # THEOS este deja setat în GITHUB_ENV, deci make va funcționa direct
           make
           
       - name: Upload Artifact
