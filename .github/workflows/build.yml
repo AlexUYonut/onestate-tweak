@@ -25,12 +25,13 @@ jobs:
 
       - name: Build Tweak
         run: |
-          # Curățăm tot și forțăm generarea binarului
           make clean
           make package FINALPACKAGE=1
 
-      - name: Upload Artifact
+      - name: Upload Everything
         uses: actions/upload-artifact@v4
         with:
-          name: OneState-Final-Package
-          path: packages/*.deb
+          name: Debug-Build-Files
+          path: |
+            packages/*.deb
+            .theos/obj/debug/*.dylib
