@@ -11,14 +11,14 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Theos
         run: |
           sudo xcode-select -s /Applications/Xcode.app
           export THEOS=/opt/theos
           sudo git clone --recursive https://github.com/theos/theos.git $THEOS
-          # Aceasta este linia care a mers
+          # Folosim metoda de download directa
           sudo curl -L https://github.com/theos/sdks/raw/master/iPhoneOS14.5.sdk.tar.xz -o $THEOS/sdks/iPhoneOS14.5.sdk.tar.xz
           sudo tar -xf $THEOS/sdks/iPhoneOS14.5.sdk.tar.xz -C $THEOS/sdks/
           
@@ -29,7 +29,7 @@ jobs:
           make package FINALPACKAGE=1
           
       - name: Upload Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: OneStateUltra-Build
           path: packages/*.deb
