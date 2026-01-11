@@ -1,4 +1,4 @@
-TARGET := iphone:clang:latest:11.0
+TARGET = iphone:clang:latest:14.0
 ARCHS = arm64 arm64e
 
 include $(THEOS)/makefiles/common.mk
@@ -12,3 +12,4 @@ OneStateUltra_LDFLAGS = -Wl,-segalign,4000
 OneStateUltra_LIBRARIES = substrate
 
 include $(THEOS_MAKE_PATH)/tweak.mk
+
