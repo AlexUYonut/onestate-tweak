@@ -14,18 +14,19 @@ jobs:
           echo "THEOS=$HOME/theos" >> $GITHUB_ENV
           echo "$HOME/theos/bin" >> $GITHUB_PATH
 
-      - name: Setup SDK
+      - name: Setup SDK (Direct Folder)
         run: |
           mkdir -p ~/theos/sdks
-          cd ~/theos/sdks
-          # Descarcă SDK-ul ca arhivă de pe GitHub pentru a evita eroarea "Unrecognized archive format"
-          curl -L https://github.com/theos/sdks/raw/master/iPhoneOS14.5.sdk.tar.xz -o iPhoneOS14.5.sdk.tar.xz
-          tar -xf iPhoneOS14.5.sdk.tar.xz
-          rm iPhoneOS14.5.sdk.tar.xz
+          # Clonăm repo-ul de SDK-uri direct în folderul de SDK-uri al Theos
+          # Folosim --depth 1 pentru a descărca rapid doar ultima versiune
+          git clone --depth 1 https://github.com/theos/sdks.git ~/theos/sdks/temp_repo
+          # Mutăm folderul care te interesează în locația corectă
+          mv ~/theos/sdks/temp_repo/iPhoneOS14.5.sdk ~/theos/sdks/
+          # Curățăm restul fișierelor descărcate
+          rm -rf ~/theos/sdks/temp_repo
 
       - name: Build Tweak
         run: |
-          # THEOS este deja setat în GITHUB_ENV, deci make va funcționa direct
           make
           
       - name: Upload Artifact
