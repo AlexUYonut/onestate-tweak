@@ -13,29 +13,27 @@ void patch_offset(uintptr_t offset, uint32_t data) {
 - (void)finishedTest:(id)arg1 extraResults:(id)arg2 {
     %orig;
     
-    // FIX pentru eroarea de 4KB (Imaginea 11)
+    // FIXUL pentru eroarea din Imaginea 11:
     int len = 1024;
-    unsigned char *data = (unsigned char *)malloc(len);
-
+    unsigned char *data = (unsigned char *)malloc(len); 
     if (data) {
         memset(data, 0, len);
         free(data);
     }
 
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(3 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        // Offset-urile tale reale
-        patch_offset(0x1234567, 0xD2800020); 
-        patch_offset(0x7654321, 0xD2800020);
+        // OFFSETURILE TALE
+        patch_offset(0x1234567, 0xD2800020); // Aimbot
+        patch_offset(0x7654321, 0xD2800020); // ESP
 
         UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"OneState Ultra" 
             message:@"Hacks Activated!" 
             preferredStyle:UIAlertControllerStyleAlert];
         [alert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil]];
         
-        // Fix pentru eroarea keyWindow (Imaginea 10)
-        UIWindow *window = [UIApplication sharedApplication].keyWindow;
+        // Rezolvă eroarea din Imaginea 10 (keyWindow)
+        UIWindow *window = [UIApplication sharedApplication].windows.firstObject;
         [window.rootViewController presentViewController:alert animated:YES completion:nil];
     });
 }
 %end
-
