@@ -8,27 +8,29 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install Theos
+      - name: Install Dependencies
         run: |
+          # Instalăm ldid pentru a putea semna binarul final
+          brew install ldid
+          # Clonăm Theos
           git clone --recursive https://github.com/theos/theos.git ~/theos
           echo "THEOS=$HOME/theos" >> $GITHUB_ENV
           echo "$HOME/theos/bin" >> $GITHUB_PATH
 
-      - name: Setup SDK (Direct Folder)
+      - name: Setup SDK
         run: |
           mkdir -p ~/theos/sdks
-          # Clonăm repo-ul de SDK-uri direct în folderul de SDK-uri al Theos
-          # Folosim --depth 1 pentru a descărca rapid doar ultima versiune
-          git clone --depth 1 https://github.com/theos/sdks.git ~/theos/sdks/temp_repo
-          # Mutăm folderul care te interesează în locația corectă
-          mv ~/theos/sdks/temp_repo/iPhoneOS14.5.sdk ~/theos/sdks/
-          # Curățăm restul fișierelor descărcate
-          rm -rf ~/theos/sdks/temp_repo
+          cd ~/theos/sdks
+          # Folosim git clone pentru SDK pentru a evita erorile de arhivă dezarhivată prost
+          git clone --depth 1 https://github.com/theos/sdks.git temp_repo
+          mv temp_repo/iPhoneOS14.5.sdk ./
+          rm -rf temp_repo
 
       - name: Build Tweak
         run: |
+          # Compilăm tweak-ul
           make
-          
+
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
